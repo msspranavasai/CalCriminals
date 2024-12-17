@@ -1,0 +1,52 @@
+---
+title: "Cal Criminals Final Project Report"
+author: "Pranava Sai Maganti, Umesh Sai Teja Poola, Meghasyam Peddireddy"
+date: "`r Sys.Date()`"
+output: github_document
+---
+
+# Introduction / Background
+
+Provide an overview of the project. Include the purpose, research questions, or goals. Explain any relevant background information.
+
+---
+
+# Data
+
+### Data Sources
+- Describe where you obtained your data. Include details about data collection or data sources.
+
+### Data Processing
+- Explain any steps taken to clean or preprocess the data:
+  - Handling missing values
+  - Transformations or filtering
+  - Feature engineering, if applicable
+
+---
+
+# Methods
+
+If applicable, describe the methods or techniques you used in the analysis:
+- Statistical methods
+- Machine learning models
+- Tools and libraries (e.g., `dplyr`, `ggplot2`, etc.)
+
+---
+
+# Results
+
+### Key Findings
+Present your results with appropriate visuals and summaries:
+- Use tables or plots to communicate findings.
+
+#### Example Plot
+```{r}
+# Example Code for a Plot (Replace with your actual code)
+library(ggplot2)
+
+data(mpg) # Sample dataset
+ggplot(mpg, aes(x=class, fill=drv)) +
+    geom_bar() +
+    labs(title="Example Plot: Count of Vehicles by Class",
+         x="Vehicle Class", y="Count")
+```

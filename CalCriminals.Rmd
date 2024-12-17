@@ -1,0 +1,663 @@
+---
+title: "Cal Criminals Final Project Report"
+author: "Pranava Sai Maganti, Umesh Sai Teja Poola, Meghasyam Peddireddy"
+date: "2024-12-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load-libraries}
+# Load required libraries
+library(tidyverse)
+library(readxl)
+library(DT)
+library(lubridate)
+library(scales)
+library(knitr)
+library(kableExtra)
+```
+
+<table style="width: 100%;">
+  <tr>
+    <td style="text-align: center; vertical-align: top;">
+      <img src="images/Calcriminals.jpg" style="width: 50%; height: auto; margin: 20px 0;">
+    </td>
+  </tr>
+</table>
+
+<p style="margin-top: 20px; margin-bottom: 20px;">
+As planned in the Project Idea & Proposal, the following team members will be performing the following tasks for the final project.
+</p>
+
+<table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd;">
+  <thead>
+    <tr>
+      <th style="padding: 8px; text-align: left; border: 1px solid #ddd; font-weight: bold;">Team Member</th>
+      <th style="padding: 8px; text-align: left; border: 1px solid #ddd; font-weight: bold;">Role</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding: 8px; border: 1px solid #ddd;">Meghasyam Peddireddy</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">Data Cleaning, Preprocessing</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px; border: 1px solid #ddd;">Umesh Sai Teja Poola</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">Exploratory Data Analysis, Modeling</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px; border: 1px solid #ddd;">Pranava Sai Maganti</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">Visualization, Interpretation</td>
+    </tr>
+  </tbody>
+</table>
+
+## Data Cleaning and Preprocessing
+
+### 1. Loading and Initial Data Inspection
+
+```{r load-data}
+# Read the data
+crimes_data <- read_excel("crimes-ca.xlsx", sheet = "ViolentCrime")
+
+# Display the first few rows and basic information about the dataset
+head(crimes_data) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+
+# Display structure of the data
+str(crimes_data)
+```
+
+### 2. Data Quality Assessment
+```{r data-quality}
+# Check for missing values
+missing_values <- colSums(is.na(crimes_data))
+missing_values_df <- data.frame(
+  Column = names(missing_values),
+  Missing_Values = missing_values
+)
+
+# Display missing values
+missing_values_df %>%
+  kable(caption = "Missing Values by Column") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+
+# Check for duplicate rows
+duplicate_count <- sum(duplicated(crimes_data))
+cat("Number of duplicate rows:", duplicate_count, "\n")
+```
+
+### 3. Data Cleaning
+
+```{r data-cleaning, echo=TRUE}
+# Clean the data step by step
+
+# 1. Convert the data to a data frame
+cleaned_crimes <- as.data.frame(crimes_data)
+
+# 2. Inspect column names for debugging
+colnames(cleaned_crimes)
+
+# 3. Handle missing values and duplicates
+cleaned_crimes <- cleaned_crimes %>%
+  drop_na() %>%     # Remove rows with missing values
+  distinct()        # Remove duplicate rows
+
+# 4. Use 'reportyear' instead of 'year' for the year information
+# Create crime rate and ensure 'reportyear' is numeric
+cleaned_crimes <- cleaned_crimes %>%
+  mutate(
+    crime_rate = (numerator / denominator) * 100000,
+    reportyear = as.integer(reportyear) # Convert reportyear to integer
+  )
+
+# 5. Rename columns for clarity
+cleaned_crimes <- cleaned_crimes %>%
+  rename(
+    year = reportyear,        # Rename reportyear to year for consistency
+    crime_count = numerator,
+    population = denominator,
+    crime_type = strata_level_name
+  )
+
+# 6. Select and organize final columns
+cleaned_crimes <- cleaned_crimes %>%
+  select(
+    year,
+    region_name,
+    county_name,
+    crime_type,
+    crime_count,
+    population,
+    crime_rate
+  )
+
+nrow(cleaned_crimes)
+ncol(cleaned_crimes)
+
+# Display summary of the cleaned data
+summary(cleaned_crimes) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+### 4. Data Transformation and Feature Engineering
+```{r data-transformation}
+# Create aggregated datasets for different analyses
+yearly_totals <- cleaned_crimes %>%
+  group_by(year) %>%
+  summarise(
+    total_crimes = sum(crime_count),
+    total_population = sum(population),
+    avg_crime_rate = mean(crime_rate)
+  )
+
+regional_totals <- cleaned_crimes %>%
+  group_by(region_name) %>%
+  summarise(
+    total_crimes = sum(crime_count),
+    avg_population = mean(population),
+    avg_crime_rate = mean(crime_rate)
+  ) %>%
+  arrange(desc(total_crimes))
+
+crime_type_totals <- cleaned_crimes %>%
+  group_by(crime_type) %>%
+  summarise(
+    total_incidents = sum(crime_count),
+    avg_rate = mean(crime_rate)
+  ) %>%
+  arrange(desc(total_incidents))
+
+# Display summaries
+kable(head(yearly_totals), caption = "Yearly Crime Totals") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+
+kable(head(regional_totals), caption = "Regional Crime Totals") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+
+kable(head(crime_type_totals), caption = "Crime Type Totals") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+### 5. Data Quality Verification
+```{r data-verification}
+# Verify data quality after cleaning
+verification_summary <- cleaned_crimes %>%
+  summarise(
+    row_count = n(),
+    distinct_years = n_distinct(year),
+    distinct_regions = n_distinct(region_name),
+    distinct_counties = n_distinct(county_name),
+    distinct_crime_types = n_distinct(crime_type),
+    min_year = min(year),
+    max_year = max(year),
+    min_crime_rate = min(crime_rate),
+    max_crime_rate = max(crime_rate)
+  )
+
+# Display verification summary
+kable(verification_summary, caption = "Data Quality Verification Summary") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+### 6. Save Cleaned Data
+```{r save-data}
+# Save the cleaned dataset for further analysis
+write.csv(cleaned_crimes, "cleaned_crimes_data.csv", row.names = FALSE)
+
+# Save the aggregated datasets
+write.csv(yearly_totals, "yearly_totals.csv", row.names = FALSE)
+write.csv(regional_totals, "regional_totals.csv", row.names = FALSE)
+write.csv(crime_type_totals, "crime_type_totals.csv", row.names = FALSE)
+
+cat("All cleaned datasets have been saved successfully!\n")
+```
+
+## Data Cleaning Summary
+
+The data cleaning and preprocessing phase has been completed successfully. Here's a summary of what was accomplished:
+
+1. **Data Loading and Initial Inspection**
+   - Loaded the raw data from crimes-ca.xlsx
+   - Performed initial inspection of data structure and content
+
+2. **Quality Assessment**
+   - Identified missing values across all columns
+   - Checked for duplicate entries
+   - Examined data types and structure
+
+3. **Data Cleaning**
+   - Removed missing values and duplicates
+   - Standardized column names
+   - Calculated crime rates per 100,000 population
+   - Selected relevant columns for analysis
+
+4. **Data Transformation**
+   - Created yearly summaries
+   - Generated regional statistics
+   - Compiled crime type aggregations
+
+5. **Quality Verification**
+   - Verified the completeness of the cleaned dataset
+   - Confirmed data ranges and distributions
+   - Validated calculated fields
+
+6. **Data Export**
+   - Saved cleaned and transformed datasets for further analysis
+   - Created separate files for different analytical perspectives
+
+The cleaned data is now ready for exploratory data analysis and modeling.
+
+## Exploratory Data Analysis (EDA)
+
+### 1. Descriptive Statistics
+```{r descriptive-statistics}
+# Descriptive statistics for crime rates
+crime_summary <- cleaned_crimes %>%
+  summarise(
+    avg_crime_rate = mean(crime_rate),
+    median_crime_rate = median(crime_rate),
+    sd_crime_rate = sd(crime_rate),
+    min_crime_rate = min(crime_rate),
+    max_crime_rate = max(crime_rate)
+  )
+
+# Save descriptive statistics to a CSV file
+write.csv(crime_summary, "crime_summary.csv", row.names = FALSE)
+
+# Display crime summary statistics
+kable(crime_summary, caption = "Crime Rate Summary Statistics") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+
+### 2. Time Series Analysis
+```{r}
+# Aggregate yearly crime data
+yearly_crime_data <- cleaned_crimes %>%
+  group_by(year) %>%
+  summarise(total_crimes = sum(crime_count))
+
+# Save yearly crime data to a CSV file
+write.csv(yearly_crime_data, "yearly_crime_data.csv", row.names = FALSE)
+
+# Plot crime trends over the years
+crime_trend_plot <- yearly_crime_data %>%
+  ggplot(aes(x = year, y = total_crimes)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 2) +
+  labs(
+    title = "Total Crimes Over Years",
+    x = "Year",
+    y = "Total Crimes"
+  ) +
+  theme_minimal()
+
+crime_trend_plot
+
+```
+
+### 3. Regional Analysis
+```{r}
+# Aggregate regional crime data
+regional_crime_data <- cleaned_crimes %>%
+  group_by(region_name) %>%
+  summarise(total_crimes = sum(crime_count))
+
+# Save regional crime data to a CSV file
+write.csv(regional_crime_data, "regional_crime_data.csv", row.names = FALSE)
+
+# Crime distribution across regions
+regional_crime_plot <- regional_crime_data %>%
+  ggplot(aes(x = reorder(region_name, -total_crimes), y = total_crimes, fill = region_name)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Crime Distribution Across Regions",
+    x = "Region",
+    y = "Total Crimes"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  coord_flip()
+
+regional_crime_plot
+
+
+```
+
+### 4. Trends Over Time
+```{r eda-trends-over-time}
+# Analyze crime trends over time
+ggplot(yearly_totals, aes(x = year)) +
+  geom_line(aes(y = total_crimes, color = "Total Crimes"), size = 1) +
+  geom_line(aes(y = avg_crime_rate * 1000, color = "Average Crime Rate (scaled)"), size = 1, linetype = "dashed") +
+  scale_y_continuous(
+    name = "Counts and Rates",
+    sec.axis = sec_axis(~ ./1000, name = "Average Crime Rate (per 100,000)")
+  ) +
+  labs(
+    title = "Crime Trends Over Time",
+    x = "Year",
+    y = "Total Crimes",
+    color = "Legend"
+  ) +
+  theme_minimal()
+```
+
+### 5. Plot crime type distribution
+```{r}
+ggplot(crime_type_totals, aes(x = reorder(crime_type, -total_incidents), y = total_incidents, fill = crime_type)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Distribution of Crime Types",
+    x = "Crime Type",
+    y = "Total Incidents"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  coord_flip()
+```
+
+### 6. Correlation between crime rate and population
+```{r}
+ggplot(cleaned_crimes, aes(x = population, y = crime_rate)) +
+  geom_point(alpha = 0.5, color = "blue") +
+  geom_smooth(method = "lm", color = "red", se = FALSE) +
+  labs(
+    title = "Correlation Between Population and Crime Rate",
+    x = "Population",
+    y = "Crime Rate (per 100,000)"
+  ) +
+  theme_minimal()
+```
+
+## Visualization & Interpretation
+
+#### 1. Scatter Plot with Linear Regression Trendline
+```{r}
+ggplot(cleaned_crimes %>% filter(population <= quantile(population, 0.99), 
+                                 crime_count <= quantile(crime_count, 0.99)), 
+       aes(x = population, y = crime_count)) +
+  geom_point(alpha = 0.6, color = "darkgreen") +
+  geom_smooth(method = "lm", se = TRUE, color = "orange") +
+  labs(
+    title = "Population vs Crime Count",
+    x = "Population",
+    y = "Crime Count"
+  ) +
+  theme_minimal()
+```
+
+##### Interpretation:
+  - There is a positive correlation between population and the number of crimes, indicating that more populous areas tend to report more crimes.
+  - The orange regression line shows the overall trend, suggesting that crime count increases linearly with population size.
+  - Outliers with high population but relatively lower crime counts suggest possible variations in law enforcement or unreported crimes.
+
+#### 2. Time Series Chart for Crime Rates by Region
+```{r}
+ggplot(cleaned_crimes, aes(x = year, y = crime_rate, color = region_name)) +
+  geom_line(stat = "summary", fun = "mean", size = 1) +
+  facet_wrap(~ region_name, scales = "free_y") +
+  labs(
+    title = "Crime Rate Distribution Over Time by Region",
+    x = "Year",
+    y = "Average Crime Rate"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+#### Interpretation:
+
+  - Crime rates vary significantly across regions, with certain regions consistently showing higher averages over the years.
+  - Some regions exhibit a decreasing trend in crime rates, indicating potential improvements in public safety measures.
+  - Peaks in crime rates during specific years may correspond to societal or economic factors affecting the respective regions.
+
+#### 3. Crime Count By County - Bar Chart
+```{r}
+top_counties <- cleaned_crimes %>%
+  group_by(county_name) %>%
+  summarise(total_crimes = sum(crime_count)) %>%
+  top_n(10, total_crimes)
+
+ggplot(top_counties, aes(x = reorder(county_name, -total_crimes), y = total_crimes, fill = county_name)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Top 10 Counties by Total Crimes",
+    x = "County",
+    y = "Total Crimes"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  coord_flip()
+```
+
+#### Interpretation:
+  - The top 10 counties contribute disproportionately to the total number of crimes, suggesting regional hotspots for criminal activity.
+  - Counties with higher crime counts may require targeted interventions to address local factors driving crime.
+  - Variations in crime counts among the top counties highlight regional disparities in crime incidence.
+
+#### 4. Crime Rate Heatmap 
+```{r}
+regional_crime_heatmap <- cleaned_crimes %>%
+  group_by(year, region_name) %>%
+  summarise(mean_crime_rate = mean(crime_rate))
+
+ggplot(regional_crime_heatmap, aes(x = year, y = region_name, fill = mean_crime_rate)) +
+  geom_tile(color = "white") +
+  scale_fill_viridis_c(option = "plasma", name = "Mean Crime Rate") +
+  labs(
+    title = "Crime Rate Heatmap by Region and Year",
+    x = "Year",
+    y = "Region"
+  ) +
+  theme_minimal()
+```
+
+#### Interpretation:
+  - Certain regions consistently display higher mean crime rates, visible through darker shades on the heatmap.
+  - Temporal patterns, such as year-over-year increases or decreases, are evident for some regions, aiding in trend analysis.
+  - The visualization emphasizes the need for region-specific strategies to reduce crime rates effectively.
+
+#### 5. Box Plot for Yearwise Crime Count Distribution
+```{r}
+ggplot(cleaned_crimes %>% filter(crime_rate <= quantile(crime_rate, 0.99)), 
+       aes(x = factor(year), y = crime_rate)) +
+  geom_boxplot(fill = "blue", alpha = 0.7) +
+  labs(
+    title = "Yearly Crime Rate Distribution (Without Outliers)",
+    x = "Year",
+    y = "Crime Rate (per 100,000)"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+#### Interpretation:
+- Median crime rates have remained relatively stable over the years, as indicated by the consistent interquartile range.
+- The presence of outliers suggests occasional surges in crime rates in certain areas or years.
+- A reduction in the range of crime rates in recent years may indicate improved consistency in law enforcement efforts.
+
+
+#### 6. Density Plot
+```{r}
+ggplot(cleaned_crimes, aes(x = crime_rate)) +
+  geom_density(fill = "orange", alpha = 0.7) +
+  facet_wrap(~ region_name, scales = "free") +
+  labs(
+    title = "Crime Rate Density by Region",
+    x = "Crime Rate",
+    y = "Density"
+  ) +
+  theme_minimal()
+```
+
+#### Interpretation:
+  - Crime rate distributions vary widely across regions, with some regions showing a higher concentration of low crime rates.
+  - Regions with multiple density peaks indicate diverse sub-regions with differing crime dynamics.
+  - Overlapping densities suggest shared trends in crime rates among geographically or demographically similar regions.
+
+
+#### 7. Line Chart for Crime Rates over years in different Counties
+```{r}
+ggplot(cleaned_crimes, aes(x = year, y = crime_rate, group = region_name, color = region_name)) +
+  geom_line(size = 1) +
+  facet_wrap(~ region_name, scales = "free_y") +
+  labs(
+    title = "Crime Rates Over Years by Region",
+    x = "Year",
+    y = "Crime Rate (per 100,000)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+```
+
+#### Interpretation:
+Crime rate trends are inconsistent across counties, with some exhibiting steady declines while others fluctuate significantly. Seasonal or policy-related effects could explain periodic spikes in certain counties.Differences in trend slopes indicate varying effectiveness of crime prevention strategies among counties.
+
+#### 8. County-wise Crime Rate Heatmap
+```{r}
+crime_heatmap_data <- cleaned_crimes %>%
+  group_by(year, county_name) %>%
+  summarise(total_crimes = sum(crime_count)) %>%
+  ungroup()
+
+ggplot(crime_heatmap_data, aes(x = year, y = county_name, fill = total_crimes)) +
+  geom_tile(color = "white") +
+  scale_fill_viridis_c(option = "plasma", name = "Total Crimes") +
+  labs(
+    title = "Crime Counts by County and Year",
+    x = "Year",
+    y = "County"
+  ) +
+  theme_minimal()
+
+```
+
+#### Interpretation:
+  - Counties with darker cells show persistently high crime counts across multiple years, pinpointing areas needing immediate attention.
+  - Temporal trends, such as periods of rising or falling crime counts, are clearly visible for each county.
+  - The heatmap highlights counties that consistently perform better or worse in crime rate management.
+
+#### 9. Crime Types Pie Chart
+```{r}
+# Aggregate data by crime type, including "Violent crime total"
+crime_type_totals <- crimes_data %>%
+  group_by(strata_level_name) %>%
+  summarise(
+    total_incidents = sum(numerator, na.rm = TRUE)
+  ) %>%
+  filter(total_incidents > 0) # Ensure valid totals
+
+# Calculate percentages and update legend labels
+crime_type_totals <- crime_type_totals %>%
+  mutate(
+    percentage = total_incidents / sum(total_incidents) * 100,
+    legend_label = sprintf("%s (%.1f%%)", strata_level_name, percentage), # Attach percentage to name
+    label = sprintf("%.1f%%", percentage) # Only display percentage in the pie chart
+  )
+
+# Create the improved pie chart
+ggplot(crime_type_totals, aes(x = "", y = total_incidents, fill = legend_label)) +
+  geom_bar(stat = "identity", width = 1, color = "white") + # Add white border for better slice separation
+  coord_polar("y", start = 0) +
+  scale_fill_brewer(palette = "Set1") + # Use a visually distinct palette
+  labs(
+    title = "Distribution of Crime Types",
+    x = NULL,
+    y = NULL,
+    fill = "Crime Type" # Updated legend with percentages
+  ) +
+  theme_void() + # Remove unnecessary chart elements
+  theme(
+    legend.position = "right",
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5) # Center and bold title
+  ) 
+```
+
+#### Interpretation:
+  - The chart effectively showcases the proportional contribution of each crime type to the total incidents.
+  - Dominance of certain crime types, such as "violent crime," reflects areas requiring focused interventions.
+  - Smaller slices emphasize less frequent crimes, highlighting diverse but less prevalent criminal activities.
+
+#### 10. Bar Chart Representing Top Counties with Highest Crime Rates
+```{r}
+top_counties <- cleaned_crimes %>%
+  group_by(county_name) %>%
+  summarise(avg_crime_rate = mean(crime_rate)) %>%
+  top_n(10, avg_crime_rate) %>%
+  arrange(desc(avg_crime_rate))
+
+ggplot(top_counties, aes(x = reorder(county_name, avg_crime_rate), y = avg_crime_rate)) +
+  geom_bar(stat = "identity", fill = "#8B0000") +
+  labs(
+    title = "Top Counties with Highest Average Crime Rates",
+    x = "County",
+    y = "Average Crime Rate (per 100,000)"
+  ) +
+  theme_minimal() +
+  coord_flip()
+
+```
+
+#### Interpretation:
+  - The top counties with the highest average crime rates may require enhanced resources or policy changes to address persistent issues.
+  - Disparities among counties indicate the unequal distribution of crime challenges across the state.
+  - This chart provides a clear indication of areas where preventive measures could significantly impact overall crime rates.
+
+#### 11. Crime Count Over Time by Crime Type
+```{r}
+# Ensure necessary columns are present and rename for clarity
+cleaned_crimes2 <- crimes_data %>%
+  rename(
+    year = reportyear,
+    crime_type = strata_level_name,
+    crime_count = numerator
+  ) %>%
+  filter(
+    !is.na(year), # Remove rows with missing years
+    !is.na(crime_count), # Remove rows with missing crime counts
+    !is.na(crime_type) # Remove rows with missing crime types
+  ) %>%
+  mutate(
+    year = as.integer(year), # Ensure year is an integer for plotting
+    crime_count = as.numeric(crime_count) # Ensure crime_count is numeric
+  )
+
+# Create the area plot
+ggplot(cleaned_crimes2, aes(x = year, y = crime_count, fill = crime_type)) +
+  geom_area(alpha = 0.7, position = "stack") + # Stacked area chart
+  scale_fill_brewer(palette = "Set3") + # Use a clear, professional color palette
+  labs(
+    title = "Crime Counts Over Time by Crime Type",
+    x = "Year",
+    y = "Total Crimes",
+    fill = "Crime Type"
+  ) +
+  theme_minimal() + # Use a minimal theme for clean visualization
+  theme(
+    legend.position = "right",
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5), # Center and bold title
+    axis.text.x = element_text(angle = 45, hjust = 1) # Rotate x-axis labels for better readability
+  )
+
+```
+
+#### Interpretation:
+  - Crime types have varied contributions over time, with some showing increasing trends while others remain constant or decrease.
+  - Periodic rises in specific crime types may correlate with policy changes or societal shifts.
+  - The stacked area chart helps visualize the relative dominance of each crime type over the years, aiding in prioritization of resources.
+
+## Conclusion
+- The analysis highlights distinct crime trends across regions, counties, and crime types, providing actionable insights for targeted interventions.
+- Consistently high crime rates in specific regions emphasize the need for localized crime prevention strategies.
+- Variations in crime rates over time suggest that societal, economic, and policy factors significantly influence crime dynamics.
+- The visualization of crime types illustrates dominant categories, underscoring areas - requiring focused attention and resources.
+- The correlation between population and crime count confirms the need for proportionate law enforcement measures in populous areas.
+- Overall, the study provides a comprehensive understanding of crime patterns in California, aiding policymakers and law enforcement in effective decision-making.
