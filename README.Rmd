@@ -29,7 +29,7 @@ By exploring these key questions, our project aims to uncover meaningful pattern
 ### **Structure**
 The dataset used for this project is available at [data.gov](https://catalog.data.gov/dataset/violent-crime-rate-9a68e). The portal provides data on various aspects of crime, including violent crime rates, demographic breakdowns, and geographic trends. The data spans multiple years, with comprehensive details for each year’s reported crimes.
 
-For this analysis, we chose to focus on data from the years 2000 to 2013. This time frame provides a recent and consistent dataset, ensuring that reporting methodologies remain stable and comparable across the years. Additionally, analyzing 17 years of data allows us to observe meaningful trends over time without overwhelming the analysis with an unmanageable volume of information.
+For this analysis, we chose to focus on data from the years 2000 to 2013. This time frame provides a recent and consistent dataset, ensuring that reporting methodologies remain stable and comparable across the years. Additionally, analyzing 13 years of data allows us to observe meaningful trends over time without overwhelming the analysis with an unmanageable volume of information.
 
 The dataset contains information from multiple aspects of crime reporting, but to streamline our analysis, we focused on the variables most relevant to violent crimes. These variables include:
 
@@ -140,13 +140,13 @@ summary(cleaned_crimes) %>%
 
 Below is a list of variables used in the dataset along with their descriptions:
 
-* year: The year in which the crime occurred.
-* region_name: The region where the crime was recorded.
-* county_name: The name of the county where the crime occurred.
-* crime_type: The type or category of crime reported.
-* crime_count: The total number of crimes reported for a given record.
-* population: The population count corresponding to the crime location.
-* crime_rate: The crime rate calculated per 100,000 population.
+* **year**: The year in which the crime occurred.
+* **region_name**: The region where the crime was recorded.
+* **county_name**: The name of the county where the crime occurred.
+* **crime_type**: The type or category of crime reported.
+* **crime_count**: The total number of crimes reported for a given record.
+* **population**: The population count corresponding to the crime location.
+* **crime_rate**: The crime rate calculated per 100,000 population.
 
 ---
 
@@ -325,11 +325,38 @@ counties_plot <- cleaned_crimes %>%
 
 print(counties_plot)
 
+# 5. Population vs. Crime Count
+# Filter and plot Population vs Crime Count
+population_crime_plot <- cleaned_crimes %>%
+  filter(
+    population <= quantile(population, 0.99), 
+    crime_count <= quantile(crime_count, 0.99)
+  ) %>%
+  ggplot(aes(x = population, y = crime_count)) +
+  geom_point(aes(color = "Data Points"), alpha = 0.9) +
+  scale_color_manual(values = "darkgreen") +
+  labs(
+    title = "Population vs Crime Count",
+    x = "Population (in scientific notation, e.g., 5e+05 = 500,000)",
+    y = "Crime Count",
+    color = "Legend"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    legend.position = "right"
+  )
+
+# Print the plot
+print(population_crime_plot)
+
+
 # Save plots
-ggsave("time_plot.png", time_plot, width = 10, height = 6)
-ggsave("regional_plot.png", regional_plot, width = 10, height = 6)
-ggsave("heatmap_plot.png", heatmap_plot, width = 12, height = 8)
-ggsave("counties_plot.png", counties_plot, width = 10, height = 6)
+ggsave("plots/time_plot.png", time_plot, width = 10, height = 6)
+ggsave("plots/regional_plot.png", regional_plot, width = 10, height = 6)
+ggsave("plots/heatmap_plot.png", heatmap_plot, width = 12, height = 8)
+ggsave("plots/counties_plot.png", counties_plot, width = 10, height = 6)
+ggsave("plots/population_vs_crime-count.png", population_crime_plot, width = 10, height = 6)
 
 # Overall Crime Statistics
 overall_stats_table <- cleaned_crimes %>%
@@ -378,9 +405,34 @@ sprintf("Total Crimes: %s", overall_stats_table$`Total Crimes`)
 sprintf("Mean Crime Rate: %.2f", overall_stats_table$`Mean Crime Rate`)
 
 ```
+
+# Answers to Our Questions
+The following section provides answers for the key questions posed earlier in the introduction:
+
+1. **What are the overall trends in violent crime rates across the years in California?**
+
+  Violent crime rates have shown a general decline over the years analyzed, reflecting progress in crime prevention strategies. However, some    years exhibited slight increases, indicating the presence of external or regional factors impacting crime rates.
+
+2. **Are there regional disparities in crime rates across counties or cities?**
+
+  Yes, significant disparities exist across different counties and regions in California. Urban areas generally recorded higher absolute crime   counts, while some less-populated counties showed surprisingly high per-capita crime rates, highlighting the need for localized                intervention strategies.
+
+3. **What types of violent crimes are most prevalent, and how do they compare across different areas?**
+
+  Assault emerged as the most prevalent violent crime across most regions. Other violent crimes, such as homicides, were concentrated in         specific areas, indicating regional hotspots. Crime type distribution varied significantly across counties and regions.
+
+4. **How does population size correlate with crime rates? Are more populated areas inherently at higher risk for crime?**
+
+  There is a strong positive correlation between population size and total crime counts. However, crime rates per 100,000 residents revealed     more nuanced trends, with some highly populated areas demonstrating effective crime management and lower-than-expected crime rates.
+
+5. **Are there differences in crime rates based on demographic factors such as race or ethnicity?**
+
+  The analysis identified demographic disparities in crime rates. Certain groups were disproportionately represented in both victim and          offender data, suggesting the influence of socioeconomic and systemic factors.
+  By addressing these questions, we uncovered critical patterns and actionable insights that can inform policymakers and law enforcement         agencies in developing targeted strategies to reduce violent crime and improve community safety across California.
+
 # Conclusion
 
-Our comprehensive analysis of California crime data from 2017 to 2021 reveals several key insights with important implications for law enforcement and policy making:
+Our comprehensive analysis of California crime data from 2000 to 2013 reveals several key insights with important implications for law enforcement and policy making:
 
 1. **Temporal Patterns**
    - Crime rates show significant year-to-year fluctuations
@@ -413,10 +465,11 @@ Our comprehensive analysis of California crime data from 2017 to 2021 reveals se
    - Potential for learning from successful crime reduction programs in better-performing regions
 
 These findings provide valuable insights for:
-- Law enforcement resource allocation
-- Policy development and implementation
-- Targeted intervention strategies
-- Regional cooperation and coordination
-- Future research directions in crime prevention
+
+  - Law enforcement resource allocation
+  - Policy development and implementation
+  - Targeted intervention strategies
+  - Regional cooperation and coordination
+  - Future research directions in crime prevention
 
 This analysis suggests that while overall crime trends show some improvement, significant regional disparities persist, indicating the need for continued focus on locally tailored crime prevention and law enforcement strategies.
