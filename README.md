@@ -46,36 +46,6 @@ crime rates, demographic breakdowns, and geographic trends. The data
 spans multiple years, with comprehensive details for each year’s
 reported crimes.
 
-For this analysis, we chose to focus on data from the years 2000
-to 2013. This time frame provides a recent and consistent dataset,
-ensuring that reporting methodologies remain stable and comparable
-across the years. Additionally, analyzing 17 years of data allows us to
-observe meaningful trends over time without overwhelming the analysis
-with an unmanageable volume of information.
-
-The dataset contains information from multiple aspects of crime
-reporting, but to streamline our analysis, we focused on the variables
-most relevant to violent crimes. These variables include:
-
-- **Crime Type and Rate**: Details about the type of violent crimes
-  (e.g., assault, homicide) and their rates per population.
-- **Geographic Information**: Data on counties and regions where the
-  crimes were reported.
-- **Demographics**: Breakdowns of reported crime rates based on race and
-  ethnicity, providing insights into population-specific trends.
-- **Population Data**: Information about the population size for each
-  geographic region to allow for normalization of crime rates.
-
-The structure of the data is such that each row represents a reported
-crime in a specific year and region, while other variables provide
-detailed information about the crime. To keep the dataset manageable, we
-focused on violent crime categories and excluded variables unrelated to
-our analysis goals.
-
-By carefully selecting the data and time frame, we created a cohesive
-and focused dataset that enables us to effectively analyze trends and
-patterns in violent crime rates across California.
-
 ## Data Cleaning and Preprocessing
 
 ### 1. Loading and Initial Data Inspection
@@ -153,7 +123,35 @@ str(crimes_data)   # Display the structure of the dataset
     ##  $ dof_population        : num [1:49227] 33873086 33873086 33873086 33873086 33873086 ...
     ##  $ version               : POSIXct[1:49227], format: "2015-10-21 11:57:16" "2015-10-21 11:57:16" ...
 
+======= For this analysis, we chose to focus on data from the years 2000
+to 2013. This time frame provides a recent and consistent dataset,
+ensuring that reporting methodologies remain stable and comparable
+across the years. Additionally, analyzing 17 years of data allows us to
+observe meaningful trends over time without overwhelming the analysis
+with an unmanageable volume of information.
 
+The dataset contains information from multiple aspects of crime
+reporting, but to streamline our analysis, we focused on the variables
+most relevant to violent crimes. These variables include:
+
+- **Crime Type and Rate**: Details about the type of violent crimes
+  (e.g., assault, homicide) and their rates per population.
+- **Geographic Information**: Data on counties and regions where the
+  crimes were reported.
+- **Demographics**: Breakdowns of reported crime rates based on race and
+  ethnicity, providing insights into population-specific trends.
+- **Population Data**: Information about the population size for each
+  geographic region to allow for normalization of crime rates.
+
+The structure of the data is such that each row represents a reported
+crime in a specific year and region, while other variables provide
+detailed information about the crime. To keep the dataset manageable, we
+focused on violent crime categories and excluded variables unrelated to
+our analysis goals.
+
+By carefully selecting the data and time frame, we created a cohesive
+and focused dataset that enables us to effectively analyze trends and
+patterns in violent crime rates across California.
 
 ### **Data Processing**
 
@@ -183,7 +181,7 @@ missing_values_df %>%
   kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
 ```
 
-<table class="table table-striped table-hover" style="color: black; width: auto !important; margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Missing Values by Column
 </caption>
@@ -558,7 +556,7 @@ summary(cleaned_crimes) %>%
   kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
 ```
 
-<table class="table table-striped table-hover" style="color: black; width: auto !important; margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Summary of Cleaned Crime Dataset
 </caption>
