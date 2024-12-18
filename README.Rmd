@@ -7,6 +7,8 @@ author: |
   Meghasyam Peddireddy
 
 output: github_document
+always_allow_html: true
+
 ---
 
 # Introduction
@@ -27,6 +29,27 @@ By exploring these key questions, our project aims to uncover meaningful pattern
 ### **Structure**
 The dataset used for this project is available at [data.gov](https://catalog.data.gov/dataset/violent-crime-rate-9a68e). The portal provides data on various aspects of crime, including violent crime rates, demographic breakdowns, and geographic trends. The data spans multiple years, with comprehensive details for each year’s reported crimes.
 
+
+
+## Data Cleaning and Preprocessing
+
+### 1. Loading and Initial Data Inspection
+
+First, we read in the dataset from the file `crimes-ca.xlsx` containing crime data from California. The data is specifically loaded from the "ViolentCrime" sheet.
+
+```{r load-data}
+# Load the required libraries
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(kableExtra)
+
+# Read the data from Excel file
+crimes_data <- read_excel("crimes-ca.xlsx", sheet = "ViolentCrime")
+
+str(crimes_data)   # Display the structure of the dataset
+```
+=======
 For this analysis, we chose to focus on data from the years 2000 to 2013. This time frame provides a recent and consistent dataset, ensuring that reporting methodologies remain stable and comparable across the years. Additionally, analyzing 17 years of data allows us to observe meaningful trends over time without overwhelming the analysis with an unmanageable volume of information.
 
 The dataset contains information from multiple aspects of crime reporting, but to streamline our analysis, we focused on the variables most relevant to violent crimes. These variables include:
@@ -46,16 +69,116 @@ By carefully selecting the data and time frame, we created a cohesive and focuse
   - Transformations or filtering
   - Feature engineering, if applicable
 
----
-
-# Methods
-
-If applicable, describe the methods or techniques you used in the analysis:
-- Statistical methods
-- Machine learning models
-- Tools and libraries (e.g., `dplyr`, `ggplot2`, etc.)
 
 ---
+
+### 2. Data Quality Assessment
+
+We checked for missing values and duplicate rows to identify inconsistencies.
+
+```{r data-quality}
+# Check for missing values in the dataset
+missing_values <- colSums(is.na(crimes_data))
+missing_values_df <- data.frame(
+  Column = names(missing_values),
+  Missing_Values = missing_values
+)
+
+# Display missing values in a table
+missing_values_df %>%
+  kable(caption = "Missing Values by Column") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+
+# Check for duplicate rows in the dataset
+duplicate_count <- sum(duplicated(crimes_data))
+cat("Number of duplicate rows:", duplicate_count, "\n")
+```
+
+---
+
+### 3. Data Cleaning
+
+We performed the following cleaning steps to prepare the data for analysis:
+
+1. **Removing Missing Values and Duplicate Rows**  
+   Rows with missing values and duplicates were removed.
+
+2. **Renaming Columns for Consistency**  
+   Column names were standardized to improve readability.
+
+3. **Calculating Crime Rates**  
+   We calculated the crime rate per 100,000 population for each row.
+
+4. **Selecting Relevant Columns**  
+   Only the required columns were retained for analysis.
+
+```{r data-cleaning}
+# Clean the data step by step
+cleaned_crimes <- crimes_data %>%
+  drop_na() %>%                 # Remove rows with missing values
+  distinct() %>%                # Remove duplicate rows
+  mutate(
+    crime_rate = (numerator / denominator) * 100000,  # Calculate crime rate
+    reportyear = as.integer(reportyear)              # Convert year column to integer
+  ) %>%
+  rename(
+    year = reportyear,          # Standardize column names
+    crime_count = numerator,
+    population = denominator,
+    crime_type = strata_level_name
+  ) %>%
+  select(
+    year,                       # Select and organize relevant columns
+    region_name,
+    county_name,
+    crime_type,
+    crime_count,
+    population,
+    crime_rate
+  )
+
+# Display the structure of the cleaned dataset
+summary(cleaned_crimes) %>%
+  kable(caption = "Summary of Cleaned Crime Dataset") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+### Variables
+
+Below is a list of variables used in the dataset along with their descriptions:
+
+* year: The year in which the crime occurred.
+* region_name: The region where the crime was recorded.
+* county_name: The name of the county where the crime occurred.
+* crime_type: The type or category of crime reported.
+* crime_count: The total number of crimes reported for a given record.
+* population: The population count corresponding to the crime location.
+* crime_rate: The crime rate calculated per 100,000 population.
+
+---
+
+### 4. Saving Cleaned Data
+
+The cleaned dataset was saved as a CSV file for further analysis.
+
+```{r save-cleaned-data}
+# Save the cleaned dataset for future use
+write.csv(cleaned_crimes, "cleaned_crimes_data.csv", row.names = FALSE)
+cat("Cleaned dataset saved as 'cleaned_crimes_data.csv'.\n")
+```
+
+---
+
+### Summary of Cleaning Steps:
+1. Removed missing values and duplicate rows.
+2. Renamed columns for clarity (`reportyear` → `year`, `numerator` → `crime_count`).
+3. Calculated crime rates per 100,000 population.
+4. Selected relevant columns: `year`, `region_name`, `county_name`, `crime_type`, `crime_count`, `population`, and `crime_rate`.
+5. Saved the cleaned dataset for further analysis.
+
+---
+
+
 
 # Results
 
