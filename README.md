@@ -4,19 +4,47 @@ Pranava Sai Maganti,
 Umesh Sai Teja Poola,  
 Meghasyam Peddireddy
 
-# Introduction / Background
+# Introduction
 
-Provide an overview of the project. Include the purpose, research
-questions, or goals. Explain any relevant background information.
+The goal of this project is to analyze crime rates in California using
+data from official records to identify trends and patterns in criminal
+activity. Understanding crime rates is essential for enhancing public
+safety, allocating law enforcement resources effectively, and
+identifying key factors contributing to violent crimes. With crime
+remaining a critical societal concern, this analysis aims to provide
+insights into the factors influencing crime rates and geographic
+disparities.
 
-------------------------------------------------------------------------
+In pursuit of this goal, we conducted comprehensive data cleaning,
+preprocessing, and exploratory analysis of crime datasets in California.
+Our analysis focuses on answering the following questions:
+
+1.  What are the overall trends in violent crime rates across the years
+    in California?
+2.  Are there regional disparities in crime rates across counties or
+    cities?
+3.  What types of violent crimes are most prevalent, and how do they
+    compare across different areas?
+4.  How does population size correlate with crime rates? Are more
+    populated areas inherently at higher risk for crime?
+5.  Are there differences in crime rates based on demographic factors
+    such as race or ethnicity?
+
+By exploring these key questions, our project aims to uncover meaningful
+patterns and provide actionable insights that can support policymakers,
+law enforcement, and community initiatives to reduce crime rates and
+ensure public safety.
 
 # Data
 
-### Data Sources
+### **Structure**
 
-- Describe where you obtained your data. Include details about data
-  collection or data sources.
+The dataset used for this project is available at
+[data.gov](https://catalog.data.gov/dataset/violent-crime-rate-9a68e).
+The portal provides data on various aspects of crime, including violent
+crime rates, demographic breakdowns, and geographic trends. The data
+spans multiple years, with comprehensive details for each year’s
+reported crimes.
 
 ## Data Cleaning and Preprocessing
 
@@ -94,6 +122,43 @@ str(crimes_data)   # Display the structure of the dataset
     ##  $ ca_rr                 : num [1:49227] NA NA NA NA 1 ...
     ##  $ dof_population        : num [1:49227] 33873086 33873086 33873086 33873086 33873086 ...
     ##  $ version               : POSIXct[1:49227], format: "2015-10-21 11:57:16" "2015-10-21 11:57:16" ...
+
+======= For this analysis, we chose to focus on data from the years 2000
+to 2013. This time frame provides a recent and consistent dataset,
+ensuring that reporting methodologies remain stable and comparable
+across the years. Additionally, analyzing 17 years of data allows us to
+observe meaningful trends over time without overwhelming the analysis
+with an unmanageable volume of information.
+
+The dataset contains information from multiple aspects of crime
+reporting, but to streamline our analysis, we focused on the variables
+most relevant to violent crimes. These variables include:
+
+- **Crime Type and Rate**: Details about the type of violent crimes
+  (e.g., assault, homicide) and their rates per population.
+- **Geographic Information**: Data on counties and regions where the
+  crimes were reported.
+- **Demographics**: Breakdowns of reported crime rates based on race and
+  ethnicity, providing insights into population-specific trends.
+- **Population Data**: Information about the population size for each
+  geographic region to allow for normalization of crime rates.
+
+The structure of the data is such that each row represents a reported
+crime in a specific year and region, while other variables provide
+detailed information about the crime. To keep the dataset manageable, we
+focused on violent crime categories and excluded variables unrelated to
+our analysis goals.
+
+By carefully selecting the data and time frame, we created a cohesive
+and focused dataset that enables us to effectively analyze trends and
+patterns in violent crime rates across California.
+
+### **Data Processing**
+
+- Explain any steps taken to clean or preprocess the data:
+  - Handling missing values
+  - Transformations or filtering
+  - Feature engineering, if applicable
 
 ------------------------------------------------------------------------
 
@@ -675,6 +740,19 @@ Max. :79569.89
 </tr>
 </tbody>
 </table>
+
+### Variables
+
+Below is a list of variables used in the dataset along with their
+descriptions:
+
+- year: The year in which the crime occurred.
+- region_name: The region where the crime was recorded.
+- county_name: The name of the county where the crime occurred.
+- crime_type: The type or category of crime reported.
+- crime_count: The total number of crimes reported for a given record.
+- population: The population count corresponding to the crime location.
+- crime_rate: The crime rate calculated per 100,000 population.
 
 ------------------------------------------------------------------------
 
