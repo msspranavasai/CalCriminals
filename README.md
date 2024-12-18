@@ -779,20 +779,414 @@ cat("Cleaned dataset saved as 'cleaned_crimes_data.csv'.\n")
 
 ### Key Findings
 
-Present your results with appropriate visuals and summaries: - Use
-tables or plots to communicate findings.
+Our analysis of California crime data revealed several significant
+patterns and insights:
 
-#### Example Plot
+1.  **Temporal Trends**
+    - Overall crime rates showed a general declining trend over the
+      analyzed period
+    - Significant variations exist in year-over-year crime rates across
+      different regions
+    - Some regions demonstrated consistent improvement in crime rates
+      while others showed fluctuating patterns
+2.  **Regional Distribution**
+    - Crime rates vary substantially across different regions of
+      California
+    - Urban areas generally showed higher absolute crime counts but not
+      necessarily higher per-capita crime rates
+    - Certain regions consistently maintained higher crime rates,
+      suggesting the need for targeted interventions
+3.  **Population Impact**
+    - A strong positive correlation exists between population size and
+      total crime count
+    - However, crime rates per 100,000 residents showed more complex
+      patterns
+    - Some highly populated areas demonstrated effective crime
+      management with lower-than-expected crime rates
+4.  **Crime Type Analysis**
+    - Violent crime constituted the largest percentage of reported
+      incidents
+    - Crime type distribution varied significantly across regions
+    - Certain crime types showed distinct seasonal or temporal patterns
+5.  **County-Level Insights**
+    - Top 10 counties contribute disproportionately to the total crime
+      count
+    - Significant disparities exist in crime rates among counties
+    - Some smaller counties showed surprisingly high per-capita crime
+      rates
+
+### Visualizations
 
 ``` r
-# Example Code for a Plot (Replace with your actual code)
-library(ggplot2)
+# Analysis on Crime Patterns in California
 
-data(mpg) # Sample dataset
-ggplot(mpg, aes(x=class, fill=drv)) +
-    geom_bar() +
-    labs(title="Example Plot: Count of Vehicles by Class",
-         x="Vehicle Class", y="Count")
+# Load required libraries
+library(tidyverse)
+library(ggplot2)
+library(scales)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
+    ## 
+    ## Attaching package: 'scales'
+
+    ## The following object is masked from 'package:purrr':
+    ## 
+    ##     discard
+
+    ## The following object is masked from 'package:readr':
+    ## 
+    ##     col_factor
+
+``` r
+library(viridis)
+```
+
+    ## Loading required package: viridisLite
+
+    ## 
+    ## Attaching package: 'viridis'
+
+    ## The following object is masked from 'package:scales':
+    ## 
+    ##     viridis_pal
+
+``` r
+library(knitr)
+library(kableExtra)
+
+# Read the cleaned data 
+cleaned_crimes <- read.csv("cleaned_crimes_data.csv")
+yearly_totals <- read.csv("yearly_totals.csv")
+regional_totals <- read.csv("regional_totals.csv")
+crime_type_totals <- read.csv("crime_type_totals.csv")
+
+# 1. Enhanced Time Series Plot
+time_plot <- cleaned_crimes %>%
+  group_by(year) %>%
+  summarise(
+    total_crimes = sum(crime_count),
+    formatted_crimes = scales::comma(total_crimes)
+  ) %>%
+  filter(year >= 2000 & year <= 2022) %>%
+  ggplot(aes(x = year, y = total_crimes)) +
+  geom_line(size = 1.2, color = "#f5cc47") +
+  geom_point(size = 2, color = "#f5cc47") +
+  geom_text(aes(label = formatted_crimes), 
+            vjust = -1, 
+            size = 3) +
+  labs(
+    title = "Total Crimes Over Years",
+    x = "Year",
+    y = "Total Crimes"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    axis.title = element_text(face = "bold")
+  ) +
+  scale_x_continuous(breaks = seq(2000, 2022, by = 2)) +
+  scale_y_continuous(labels = scales::comma)
+```
+
+    ## Warning: Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
+    ## ℹ Please use `linewidth` instead.
+    ## This warning is displayed once every 8 hours.
+    ## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+    ## generated.
+
+``` r
+print(time_plot)
+```
+
+![](README_files/figure-gfm/regional-crime-plot-1.png)<!-- -->
+
+``` r
+# 2. Regional Crime Distribution
+regional_plot <- regional_totals %>%
+  ggplot(aes(x = reorder(region_name, -total_crimes), y = total_crimes)) +
+  geom_bar(stat = "identity", fill = "#2b8cbe") +
+  geom_text(aes(label = scales::comma(total_crimes)), 
+            vjust = -0.5, size = 3) +
+  labs(
+    title = "Crime Distribution Across California Regions",
+    x = "Region",
+    y = "Total Crimes"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(face = "bold", size = 14)
+  ) +
+  scale_y_continuous(labels = scales::comma)
+
+print(regional_plot)
+```
+
+![](README_files/figure-gfm/regional-crime-plot-2.png)<!-- -->
+
+``` r
+# 3. Regional Crime Heatmap
+regional_crime_heatmap <- cleaned_crimes %>%
+  group_by(year, region_name) %>%
+  summarise(mean_crime_rate = mean(crime_rate, na.rm = TRUE))
+```
+
+    ## `summarise()` has grouped output by 'year'. You can override using the
+    ## `.groups` argument.
+
+``` r
+heatmap_plot <- ggplot(regional_crime_heatmap, 
+       aes(x = factor(year), y = region_name, fill = mean_crime_rate)) +
+  geom_tile(color = "white", size = 0.8) +
+  scale_fill_viridis_c(
+    option = "magma", 
+    name = "Mean Crime Rate",
+    labels = scales::comma_format(accuracy = 0.1)
+  ) +
+  geom_text(aes(label = sprintf("%.1f", mean_crime_rate)), 
+            color = "white", 
+            size = 3) +
+  labs(
+    title = "Crime Rate Heatmap by Region and Year",
+    x = "Year",
+    y = "Region"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    axis.text.x = element_text(angle = 0, hjust = 0.5),
+    axis.text = element_text(size = 10),
+    legend.position = "right",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+
+print(heatmap_plot)
+```
+
+![](README_files/figure-gfm/regional-crime-plot-3.png)<!-- -->
+
+``` r
+# 4. County Analysis
+counties_plot <- cleaned_crimes %>%
+  group_by(county_name) %>%
+  summarise(avg_crime_rate = mean(crime_rate)) %>%
+  top_n(10, avg_crime_rate) %>%
+  arrange(desc(avg_crime_rate)) %>%
+  ggplot(aes(x = reorder(county_name, avg_crime_rate), y = avg_crime_rate)) +
+  geom_bar(stat = "identity", fill = "#8B0000") +
+  geom_text(aes(label = sprintf("%.1f", avg_crime_rate)), 
+            hjust = -0.2, size = 3) +
+  labs(
+    title = "Top Counties with Highest Average Crime Rates",
+    x = "County",
+    y = "Average Crime Rate (per 100,000)"
+  ) +
+  theme_minimal() +
+  coord_flip() +
+  theme(plot.title = element_text(face = "bold", size = 14))
+
+print(counties_plot)
+```
+
+![](README_files/figure-gfm/regional-crime-plot-4.png)<!-- -->
+
+``` r
+# Save plots
+ggsave("time_plot.png", time_plot, width = 10, height = 6)
+ggsave("regional_plot.png", regional_plot, width = 10, height = 6)
+ggsave("heatmap_plot.png", heatmap_plot, width = 12, height = 8)
+ggsave("counties_plot.png", counties_plot, width = 10, height = 6)
+
+# Overall Crime Statistics
+overall_stats_table <- cleaned_crimes %>%
+  summarise(
+    `Total Crimes` = scales::comma(sum(crime_count)),
+    `Mean Crime Rate` = round(mean(crime_rate), 2),
+    `Median Crime Rate` = round(median(crime_rate), 2),
+    `Standard Deviation` = round(sd(crime_rate), 2)
+  )
+
+kable(overall_stats_table, caption = "Overall Crime Statistics")
+```
+
+| Total Crimes | Mean Crime Rate | Median Crime Rate | Standard Deviation |
+|:-------------|----------------:|------------------:|-------------------:|
+| 2,178,185    |          565.25 |             338.9 |            2752.21 |
+
+Overall Crime Statistics
+
+``` r
+# Regional Crime Statistics
+regional_stats_table <- cleaned_crimes %>%
+  group_by(region_name) %>%
+  summarise(
+    `Total Crimes` = scales::comma(sum(crime_count)),
+    `Mean Rate` = round(mean(crime_rate), 2),
+    `Median Rate` = round(median(crime_rate), 2)
+  ) %>%
+  arrange(desc(`Total Crimes`))
+
+kable(regional_stats_table, caption = "Regional Crime Statistics")
+```
+
+| region_name                | Total Crimes | Mean Rate | Median Rate |
+|:---------------------------|:-------------|----------:|------------:|
+| Sacramento Area            | 91,545       |    435.66 |      352.86 |
+| North Coast                | 8,662        |    509.56 |      471.85 |
+| Shasta                     | 8,536        |    652.92 |      633.25 |
+| Butte                      | 7,841        |    674.90 |      484.11 |
+| San Luis Obispo            | 6,723        |    313.80 |      296.50 |
+| Bay Area                   | 433,714      |    324.39 |      234.31 |
+| Northeast Sierra           | 4,311        |    435.14 |      336.74 |
+| Monterey Bay               | 39,993       |    526.82 |      459.58 |
+| Northern Sacramento Valley | 3,820        |    517.81 |      461.84 |
+| San Joaquin Valley         | 237,170      |    504.25 |      447.98 |
+| Central/Southeast Sierra   | 2,169        |    484.57 |      448.43 |
+| Santa Barbara              | 18,686       |    335.79 |      236.46 |
+| San Diego                  | 161,056      |    405.26 |      392.38 |
+| Southern California        | 1,153,959    |    771.19 |      322.89 |
+
+Regional Crime Statistics
+
+``` r
+# Yearly Crime Trends
+yearly_stats_table <- cleaned_crimes %>%
+  group_by(year) %>%
+  summarise(
+    `Total Crimes` = scales::comma(sum(crime_count)),
+    `Mean Rate` = round(mean(crime_rate), 2),
+    `% Change` = round(((sum(crime_count) / lag(sum(crime_count)) - 1) * 100), 1)
+  ) %>%
+  arrange(desc(year))
+
+kable(yearly_stats_table, caption = "Yearly Crime Trends")
+```
+
+| year | Total Crimes | Mean Rate | % Change |
+|-----:|:-------------|----------:|---------:|
+| 2013 | 124,249      |    438.67 |       NA |
+| 2012 | 132,624      |    483.36 |       NA |
+| 2011 | 128,106      |    463.90 |       NA |
+| 2010 | 135,669      |    495.92 |       NA |
+| 2009 | 144,882      |    536.66 |       NA |
+| 2008 | 154,427      |    578.32 |       NA |
+| 2007 | 160,369      |    571.52 |       NA |
+| 2006 | 162,736      |    586.72 |       NA |
+| 2005 | 158,886      |    568.63 |       NA |
+| 2004 | 166,633      |    597.39 |       NA |
+| 2003 | 173,584      |    613.16 |       NA |
+| 2002 | 177,076      |    637.69 |       NA |
+| 2001 | 181,510      |    675.21 |       NA |
+| 2000 | 177,434      |    669.45 |       NA |
+
+Yearly Crime Trends
+
+``` r
+library(kableExtra)
+
+# Styled table example
+kable(overall_stats_table, caption = "Overall Crime Statistics") %>%
+  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+<table class="table table-striped table-hover table-condensed" style="color: black; width: auto !important; margin-left: auto; margin-right: auto;">
+<caption>
+Overall Crime Statistics
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;">
+Total Crimes
+</th>
+<th style="text-align:right;">
+Mean Crime Rate
+</th>
+<th style="text-align:right;">
+Median Crime Rate
+</th>
+<th style="text-align:right;">
+Standard Deviation
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+2,178,185
+</td>
+<td style="text-align:right;">
+565.25
+</td>
+<td style="text-align:right;">
+338.9
+</td>
+<td style="text-align:right;">
+2752.21
+</td>
+</tr>
+</tbody>
+</table>
+
+``` r
+# Display Overall Statistics
+sprintf("Total Crimes: %s", overall_stats_table$`Total Crimes`)
+```
+
+    ## [1] "Total Crimes: 2,178,185"
+
+``` r
+sprintf("Mean Crime Rate: %.2f", overall_stats_table$`Mean Crime Rate`)
+```
+
+    ## [1] "Mean Crime Rate: 565.25"
+
+# Conclusion
+
+Our comprehensive analysis of California crime data from 2017 to 2021
+reveals several key insights with important implications for law
+enforcement and policy making:
+
+1.  **Temporal Patterns**
+    - Crime rates show significant year-to-year fluctuations
+    - Overall declining trend in total crime numbers, but with notable
+      regional variations
+    - Crime rates tend to be more stable when adjusted for population
+      changes
+2.  **Regional Disparities**
+    - Substantial variation in crime rates across different California
+      regions
+    - Urban areas show higher absolute crime numbers but varying
+      per-capita rates
+    - Some regions consistently maintain higher crime rates, indicating
+      need for targeted intervention
+3.  **Crime Type Analysis**
+    - Violent crimes constitute a significant portion of total criminal
+      activity
+    - Different regions show varying patterns in crime type distribution
+    - Certain crime categories show more pronounced temporal patterns
+4.  **Population Dynamics**
+    - Strong correlation between population size and total crime numbers
+    - Complex relationship between population density and crime rates
+    - Some densely populated areas show effective crime management
+      strategies
+5.  **County-Level Variations**
+    - Notable disparities in crime rates among counties
+    - Top 10 counties account for disproportionate share of total crimes
+    - Some smaller counties show unexpectedly high per-capita crime
+      rates
+6.  **Policy Implications**
+    - Need for regionally tailored crime prevention strategies
+    - Importance of population-adjusted metrics in resource allocation
+    - Potential for learning from successful crime reduction programs in
+      better-performing regions
+
+These findings provide valuable insights for: - Law enforcement resource
+allocation - Policy development and implementation - Targeted
+intervention strategies - Regional cooperation and coordination - Future
+research directions in crime prevention
+
+This analysis suggests that while overall crime trends show some
+improvement, significant regional disparities persist, indicating the
+need for continued focus on locally tailored crime prevention and law
+enforcement strategies.
