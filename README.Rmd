@@ -1,8 +1,14 @@
 ---
 title: "Cal Criminals Final Project Report"
-author: "Pranava Sai Maganti, Umesh Sai Teja Poola, Meghasyam Peddireddy"
-date: "`r Sys.Date()`"
+
+author: |
+  Pranava Sai Maganti,  
+  Umesh Sai Teja Poola,  
+  Meghasyam Peddireddy
+
 output: github_document
+always_allow_html: true
+
 ---
 
 # Introduction / Background
@@ -16,22 +22,123 @@ Provide an overview of the project. Include the purpose, research questions, or 
 ### Data Sources
 - Describe where you obtained your data. Include details about data collection or data sources.
 
-### Data Processing
-- Explain any steps taken to clean or preprocess the data:
-  - Handling missing values
-  - Transformations or filtering
-  - Feature engineering, if applicable
+
+## Data Cleaning and Preprocessing
+
+### 1. Loading and Initial Data Inspection
+
+First, we read in the dataset from the file `crimes-ca.xlsx` containing crime data from California. The data is specifically loaded from the "ViolentCrime" sheet.
+
+```{r load-data}
+# Load the required libraries
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(kableExtra)
+
+# Read the data from Excel file
+crimes_data <- read_excel("crimes-ca.xlsx", sheet = "ViolentCrime")
+
+str(crimes_data)   # Display the structure of the dataset
+```
 
 ---
 
-# Methods
+### 2. Data Quality Assessment
 
-If applicable, describe the methods or techniques you used in the analysis:
-- Statistical methods
-- Machine learning models
-- Tools and libraries (e.g., `dplyr`, `ggplot2`, etc.)
+We checked for missing values and duplicate rows to identify inconsistencies.
+
+```{r data-quality}
+# Check for missing values in the dataset
+missing_values <- colSums(is.na(crimes_data))
+missing_values_df <- data.frame(
+  Column = names(missing_values),
+  Missing_Values = missing_values
+)
+
+# Display missing values in a table
+missing_values_df %>%
+  kable(caption = "Missing Values by Column") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+
+# Check for duplicate rows in the dataset
+duplicate_count <- sum(duplicated(crimes_data))
+cat("Number of duplicate rows:", duplicate_count, "\n")
+```
 
 ---
+
+### 3. Data Cleaning
+
+We performed the following cleaning steps to prepare the data for analysis:
+
+1. **Removing Missing Values and Duplicate Rows**  
+   Rows with missing values and duplicates were removed.
+
+2. **Renaming Columns for Consistency**  
+   Column names were standardized to improve readability.
+
+3. **Calculating Crime Rates**  
+   We calculated the crime rate per 100,000 population for each row.
+
+4. **Selecting Relevant Columns**  
+   Only the required columns were retained for analysis.
+
+```{r data-cleaning}
+# Clean the data step by step
+cleaned_crimes <- crimes_data %>%
+  drop_na() %>%                 # Remove rows with missing values
+  distinct() %>%                # Remove duplicate rows
+  mutate(
+    crime_rate = (numerator / denominator) * 100000,  # Calculate crime rate
+    reportyear = as.integer(reportyear)              # Convert year column to integer
+  ) %>%
+  rename(
+    year = reportyear,          # Standardize column names
+    crime_count = numerator,
+    population = denominator,
+    crime_type = strata_level_name
+  ) %>%
+  select(
+    year,                       # Select and organize relevant columns
+    region_name,
+    county_name,
+    crime_type,
+    crime_count,
+    population,
+    crime_rate
+  )
+
+# Display the structure of the cleaned dataset
+summary(cleaned_crimes) %>%
+  kable(caption = "Summary of Cleaned Crime Dataset") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+---
+
+### 4. Saving Cleaned Data
+
+The cleaned dataset was saved as a CSV file for further analysis.
+
+```{r save-cleaned-data}
+# Save the cleaned dataset for future use
+write.csv(cleaned_crimes, "cleaned_crimes_data.csv", row.names = FALSE)
+cat("Cleaned dataset saved as 'cleaned_crimes_data.csv'.\n")
+```
+
+---
+
+### Summary of Cleaning Steps:
+1. Removed missing values and duplicate rows.
+2. Renamed columns for clarity (`reportyear` → `year`, `numerator` → `crime_count`).
+3. Calculated crime rates per 100,000 population.
+4. Selected relevant columns: `year`, `region_name`, `county_name`, `crime_type`, `crime_count`, `population`, and `crime_rate`.
+5. Saved the cleaned dataset for further analysis.
+
+---
+
+
 
 # Results
 
