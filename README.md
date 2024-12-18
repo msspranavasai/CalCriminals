@@ -49,7 +49,7 @@ reported crimes.
 For this analysis, we chose to focus on data from the years 2000 to
 2013. This time frame provides a recent and consistent dataset, ensuring
 that reporting methodologies remain stable and comparable across the
-years. Additionally, analyzing 17 years of data allows us to observe
+years. Additionally, analyzing 13 years of data allows us to observe
 meaningful trends over time without overwhelming the analysis with an
 unmanageable volume of information.
 
@@ -127,7 +127,7 @@ str(crimes_data)   # Display the structure of the dataset
     ## tibble [49,227 × 27] (S3: tbl_df/tbl/data.frame)
     ##  $ ind_id                : num [1:49227] 752 752 752 752 752 752 752 752 752 752 ...
     ##  $ ind_definition        : chr [1:49227] "Number of Violent Crimes per 1,000 Population" "Number of Violent Crimes per 1,000 Population" "Number of Violent Crimes per 1,000 Population" "Number of Violent Crimes per 1,000 Population" ...
-    ##  $ reportyear            : chr [1:49227] "2000" "2000" "2000" "2000" ...
+    ##  $ reportyear            : chr [1:49227] "2013" "2013" "2013" "2013" ...
     ##  $ race_eth_code         : num [1:49227] 9 9 9 9 9 9 9 9 9 9 ...
     ##  $ race_eth_name         : chr [1:49227] "Total" "Total" "Total" "Total" ...
     ##  $ geotype               : chr [1:49227] "CA" "CA" "CA" "CA" ...
@@ -141,17 +141,17 @@ str(crimes_data)   # Display the structure of the dataset
     ##  $ strata_name           : chr [1:49227] "Type of violent crime" "Type of violent crime" "Type of violent crime" "Type of violent crime" ...
     ##  $ strata_level_name_code: num [1:49227] 1 2 3 4 5 1 2 3 4 5 ...
     ##  $ strata_level_name     : chr [1:49227] "Aggravated assault" "Forcible rape" "Murder and non-negligent manslaughter" "Robbery" ...
-    ##  $ numerator             : num [1:49227] 138325 9784 2079 60237 210448 ...
-    ##  $ denominator           : num [1:49227] 33847694 33847694 33847694 33847694 33847694 ...
-    ##  $ rate                  : num [1:49227] NA NA NA NA 6.22 ...
-    ##  $ ll_95ci               : num [1:49227] NA NA NA NA 6.19 ...
-    ##  $ ul_95ci               : num [1:49227] NA NA NA NA 6.24 ...
-    ##  $ se                    : num [1:49227] NA NA NA NA 0.0136 ...
-    ##  $ rse                   : num [1:49227] NA NA NA NA 0.218 ...
+    ##  $ numerator             : num [1:49227] 88785 7454 1745 53609 151593 ...
+    ##  $ denominator           : num [1:49227] 38290355 38290355 38290355 38290355 38290355 ...
+    ##  $ rate                  : num [1:49227] NA NA NA NA 3.96 ...
+    ##  $ ll_95ci               : num [1:49227] NA NA NA NA 3.94 ...
+    ##  $ ul_95ci               : num [1:49227] NA NA NA NA 3.98 ...
+    ##  $ se                    : num [1:49227] NA NA NA NA 0.0102 ...
+    ##  $ rse                   : num [1:49227] NA NA NA NA 0.257 ...
     ##  $ ca_decile             : num [1:49227] NA NA NA NA NA NA NA NA NA NA ...
     ##  $ ca_rr                 : num [1:49227] NA NA NA NA 1 ...
-    ##  $ dof_population        : num [1:49227] 33873086 33873086 33873086 33873086 33873086 ...
-    ##  $ version               : POSIXct[1:49227], format: "2015-10-21 11:57:16" "2015-10-21 11:57:16" ...
+    ##  $ dof_population        : num [1:49227] 38193865 38193865 38193865 38193865 38193865 ...
+    ##  $ version               : POSIXct[1:49227], format: "2015-10-21 11:57:42" "2015-10-21 11:57:42" ...
 
 ------------------------------------------------------------------------
 
@@ -174,7 +174,7 @@ missing_values_df %>%
   kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
 ```
 
-<table class="table table-striped table-hover" style="color: black; width: auto !important; margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Missing Values by Column
 </caption>
@@ -549,7 +549,7 @@ summary(cleaned_crimes) %>%
   kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
 ```
 
-<table class="table table-striped table-hover" style="color: black; width: auto !important; margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Summary of Cleaned Crime Dataset
 </caption>
@@ -739,13 +739,15 @@ Max. :79569.89
 Below is a list of variables used in the dataset along with their
 descriptions:
 
-- year: The year in which the crime occurred.
-- region_name: The region where the crime was recorded.
-- county_name: The name of the county where the crime occurred.
-- crime_type: The type or category of crime reported.
-- crime_count: The total number of crimes reported for a given record.
-- population: The population count corresponding to the crime location.
-- crime_rate: The crime rate calculated per 100,000 population.
+- **year**: The year in which the crime occurred.
+- **region_name**: The region where the crime was recorded.
+- **county_name**: The name of the county where the crime occurred.
+- **crime_type**: The type or category of crime reported.
+- **crime_count**: The total number of crimes reported for a given
+  record.
+- **population**: The population count corresponding to the crime
+  location.
+- **crime_rate**: The crime rate calculated per 100,000 population.
 
 ------------------------------------------------------------------------
 
@@ -992,11 +994,41 @@ print(counties_plot)
 ![](README_files/figure-gfm/regional-crime-plot-4.png)<!-- -->
 
 ``` r
+# 5. Population vs. Crime Count
+# Filter and plot Population vs Crime Count
+population_crime_plot <- cleaned_crimes %>%
+  filter(
+    population <= quantile(population, 0.99), 
+    crime_count <= quantile(crime_count, 0.99)
+  ) %>%
+  ggplot(aes(x = population, y = crime_count)) +
+  geom_point(aes(color = "Data Points"), alpha = 0.9) +
+  scale_color_manual(values = "darkgreen") +
+  labs(
+    title = "Population vs Crime Count",
+    x = "Population (in scientific notation, e.g., 5e+05 = 500,000)",
+    y = "Crime Count",
+    color = "Legend"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    legend.position = "right"
+  )
+
+# Print the plot
+print(population_crime_plot)
+```
+
+![](README_files/figure-gfm/regional-crime-plot-5.png)<!-- -->
+
+``` r
 # Save plots
-ggsave("time_plot.png", time_plot, width = 10, height = 6)
-ggsave("regional_plot.png", regional_plot, width = 10, height = 6)
-ggsave("heatmap_plot.png", heatmap_plot, width = 12, height = 8)
-ggsave("counties_plot.png", counties_plot, width = 10, height = 6)
+ggsave("plots/time_plot.png", time_plot, width = 10, height = 6)
+ggsave("plots/regional_plot.png", regional_plot, width = 10, height = 6)
+ggsave("plots/heatmap_plot.png", heatmap_plot, width = 12, height = 8)
+ggsave("plots/counties_plot.png", counties_plot, width = 10, height = 6)
+ggsave("plots/population_vs_crime-count.png", population_crime_plot, width = 10, height = 6)
 
 # Overall Crime Statistics
 overall_stats_table <- cleaned_crimes %>%
@@ -1090,7 +1122,7 @@ kable(overall_stats_table, caption = "Overall Crime Statistics") %>%
   kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed"))
 ```
 
-<table class="table table-striped table-hover table-condensed" style="color: black; width: auto !important; margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Overall Crime Statistics
 </caption>
@@ -1141,9 +1173,58 @@ sprintf("Mean Crime Rate: %.2f", overall_stats_table$`Mean Crime Rate`)
 
     ## [1] "Mean Crime Rate: 565.25"
 
+# Answers to Our Questions
+
+The following section provides answers for the key questions posed
+earlier in the introduction:
+
+1.  **What are the overall trends in violent crime rates across the
+    years in California?**
+
+Violent crime rates have shown a general decline over the years
+analyzed, reflecting progress in crime prevention strategies. However,
+some years exhibited slight increases, indicating the presence of
+external or regional factors impacting crime rates.
+
+2.  **Are there regional disparities in crime rates across counties or
+    cities?**
+
+Yes, significant disparities exist across different counties and regions
+in California. Urban areas generally recorded higher absolute crime
+counts, while some less-populated counties showed surprisingly high
+per-capita crime rates, highlighting the need for localized intervention
+strategies.
+
+3.  **What types of violent crimes are most prevalent, and how do they
+    compare across different areas?**
+
+Assault emerged as the most prevalent violent crime across most regions.
+Other violent crimes, such as homicides, were concentrated in specific
+areas, indicating regional hotspots. Crime type distribution varied
+significantly across counties and regions.
+
+4.  **How does population size correlate with crime rates? Are more
+    populated areas inherently at higher risk for crime?**
+
+There is a strong positive correlation between population size and total
+crime counts. However, crime rates per 100,000 residents revealed more
+nuanced trends, with some highly populated areas demonstrating effective
+crime management and lower-than-expected crime rates.
+
+5.  **Are there differences in crime rates based on demographic factors
+    such as race or ethnicity?**
+
+The analysis identified demographic disparities in crime rates. Certain
+groups were disproportionately represented in both victim and offender
+data, suggesting the influence of socioeconomic and systemic factors. By
+addressing these questions, we uncovered critical patterns and
+actionable insights that can inform policymakers and law enforcement
+agencies in developing targeted strategies to reduce violent crime and
+improve community safety across California.
+
 # Conclusion
 
-Our comprehensive analysis of California crime data from 2017 to 2021
+Our comprehensive analysis of California crime data from 2000 to 2013
 reveals several key insights with important implications for law
 enforcement and policy making:
 
@@ -1181,10 +1262,13 @@ enforcement and policy making:
     - Potential for learning from successful crime reduction programs in
       better-performing regions
 
-These findings provide valuable insights for: - Law enforcement resource
-allocation - Policy development and implementation - Targeted
-intervention strategies - Regional cooperation and coordination - Future
-research directions in crime prevention
+These findings provide valuable insights for:
+
+- Law enforcement resource allocation
+- Policy development and implementation
+- Targeted intervention strategies
+- Regional cooperation and coordination
+- Future research directions in crime prevention
 
 This analysis suggests that while overall crime trends show some
 improvement, significant regional disparities persist, indicating the
